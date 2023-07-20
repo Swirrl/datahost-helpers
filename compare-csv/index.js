@@ -45,20 +45,26 @@ getCurrentData = async (url) => {
 }
 
 fullRowHash = async (data, type) => {
-
     let temp = []
-    for (i = 0; i < data.length; i++) {
-        let toHash = JSON.stringify(data[i])
-        toHash = toHash.toLowerCase()
-        let rowHash = crypto.createHash('sha1').update(toHash).digest('hex');
-        //we only need the hash for the old data so just produce an array of those
-        if (type === "old") {
+
+    //we only need the hash for the old data so just produce an array of those
+    if (type === "old") {
+        for (i = 0; i < data.length; i++) {
+            let toHash = JSON.stringify(data[i])
+            toHash = toHash.toLowerCase()
+            let rowHash = crypto.createHash('sha1').update(toHash).digest('hex');
             temp[i] = rowHash;
-        } else {
-            temp = data
+        }
+    } else {
+        temp = JSON.parse(JSON.stringify(data))
+        for (i = 0; i < data.length; i++) {
+            let toHash = JSON.stringify(data[i])
+            toHash = toHash.toLowerCase()
+            let rowHash = crypto.createHash('sha1').update(toHash).digest('hex');
             temp[i]["fullHash"] = rowHash;
         }
     }
+
     return temp
 }
 
@@ -140,6 +146,30 @@ checkHeaders = (original, current) => {
     }
 }
 
+compareDataDeletes = async (old, current) => {
+    console.log(old[1])
+    console.log(current[1])
+    // let data = old.filter(x => current.includes(x));
+
+    // data = []
+    // for (i = 0; i < current.length; i++) {
+    //     if (i % 10000 === 0) {
+    //         console.log(`Compared: ${i}`)
+    //     }
+    //     let hash = current[i].fullHash
+    //     result = old.indexOf(hash)
+    //     if (result === -1) {
+    //         data.push(current[i])
+    //     }
+    // }
+    // let old = JSON.stringify(data[i])
+
+    let deletes = old.filter(x => !current.includes(x));
+
+    console.log(deletes)
+    return deletes
+}
+
 start = async () => {
 
     console.log("Loading data")
@@ -159,7 +189,6 @@ start = async () => {
         let existingDataHash = await fullRowHash(existingData, "old")
         let currentDataHash = await fullRowHash(currentData)
         console.timeEnd("Generating hashed values");
-
 
         console.log("Compare data")
         console.time("Compare data");
@@ -242,9 +271,22 @@ start = async () => {
                         console.log(error);
                     });
 
-                console.timeEnd("Generate downloads");
-                console.timeEnd("Total time");
+
             }
+
+
+            // //find deletes
+            // console.log("Find deletes")
+
+            // const currentDataDimensionsFull = await removeObservationsForHashing(currentData, observations)
+
+            // let deletes = await compareDataDeletes(existingDataDimensions, currentDataDimensionsFull)
+
+            // console.log(deletes)
+
+            console.timeEnd("Generate downloads");
+            console.timeEnd("Total time");
+
         } else {
             console.log("No changes between datasets")
         }
